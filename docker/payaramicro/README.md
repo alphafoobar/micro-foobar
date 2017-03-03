@@ -38,7 +38,7 @@ There are number of ways how you can run your applications with Payara Micro wit
 
  - load applications from a mounted file-system (from a disk on the host system or on network)
  - derive a new docker image that also contains your applications on the file-system
- - load applications from a maven repository accessible from the dockar container
+ - load applications from a maven repository accessible from the docker container
 
 ### Run from a mounted volume
 
@@ -55,6 +55,12 @@ docker docker run -p 8080:8080 \
 ```
 
 If you would like to run a specific application within the directory, you can use `--deploy` option followed by path to the application file.
+
+```
+docker run -p 8080:8080  -i -t \
+ -v ~/git/micro-foobar/target/:/opt/payara/deployments \
+ foobar-payara java -jar /opt/payara/payara-micro.jar --deploy /opt/payara/deployments/micro-foobar-0.0.1-SNAPSHOT.war
+```
 
 ### Build a new docker image to run your application
 
