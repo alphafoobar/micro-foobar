@@ -24,7 +24,6 @@ public class MessageResource {
     @Produces("application/json")
     public Welcome whatever(@QueryParam(value = "name") String name) {
         logger.info("incoming request name=\"{}\"", name);
-        logger.info("jersey.config.server.disableMoxyJson=\"{}\"", System.getProperty("jersey.config.server.disableMoxyJson"));
         String newName = name == null ? "duke" : name;
         return new Welcome(String.format("hey, %s!", newName), newName);
     }
