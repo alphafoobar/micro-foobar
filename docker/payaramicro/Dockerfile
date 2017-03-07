@@ -13,7 +13,7 @@ RUN   apk update \
  &&   update-ca-certificates  
 
 # Default payara ports to expose
-EXPOSE 4848 8009 8080 8181
+EXPOSE 4848 5005 8009 8080 8181
 
 USER payara
 WORKDIR $PAYARA_PATH

@@ -48,15 +48,15 @@ The docker image already contains `/opt/payara/deployments` directory, which can
 
 The following command will run Payara Micro docker container and will deploy applications that exist in the directory `~/payara-micro/applications` on the host file-system:
 
-```
-docker docker run -p 8080:8080 \
+```bash
+docker run -p 8080:8080 \
  -v ~/payara-micro/applications:/opt/payara/deployments payara/micro \
  java -jar /opt/payara/payara-micro.jar --deploymentDir /opt/payara/deployments
 ```
 
 If you would like to run a specific application within the directory, you can use `--deploy` option followed by path to the application file.
 
-```
+```bash
 docker run -p 8080:8080  -i -t \
  -v ~/git/micro-foobar/target/:/opt/payara/deployments \
  foobar-payara java -jar /opt/payara/payara-micro.jar --deploy /opt/payara/deployments/micro-foobar-0.0.1-SNAPSHOT.war
@@ -68,7 +68,7 @@ You can extend the docker image to add your deployables into the `/opt/payara/de
 
 The following example Dockerfile will build an image that deploys `myapplication.war` when Payara Micro is started with the above `--deploymentDir` option:
 
-```
+```bash
 FROM payara/server-full:162
 
 COPY myapplication.war /opt/payara/deployments
@@ -80,7 +80,7 @@ If your application is already in a maven repository, you can run it with Payara
 
 The following command runs Payara Micro in the docker image and runs an application stored in a maven repository. The application group is `fish.payara.examples`, artifact name is `my-application`, and version is `1.0-SNAPSHOT`. The maven repository is available on host `172.17.0.10`:
 
-```
+```bash
 docker run -p 8080:8080 payara/micro \
  java -jar /opt/payara/payara-micro.jar \
  --deployFromGAV "fish.payara.examples,my-application,1.0-SNAPSHOT" \

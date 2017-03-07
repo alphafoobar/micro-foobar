@@ -29,3 +29,7 @@ For more details on how to run a (payara docker image)[https://hub.docker.com/r/
 ## Quick start
 
     docker run -p 8080:8080 payara/micro java -jar /opt/payara/payara-micro.jar
+
+## Run a shell
+
+    docker run -i -t sample-rest /bin/sh

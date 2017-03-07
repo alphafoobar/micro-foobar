@@ -1,20 +1,24 @@
 package kiwi.ergo.foobar.api;
 
-import java.io.Serializable;
+import java.time.ZonedDateTime;
+import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * MOXy JSON serialization requires POJOs implement serializable and have a default constructor.
  */
-public class Welcome implements Serializable {
+@XmlRootElement
+public class Welcome {
 
     private String greeting;
     private String name;
+    private ZonedDateTime dateTime;
 
     public Welcome() {}
 
     public Welcome(String greeting, String name) {
         this.greeting = greeting;
         this.name = name;
+        this.dateTime = ZonedDateTime.now();
     }
 
     public String getGreeting() {
@@ -31,5 +35,13 @@ public class Welcome implements Serializable {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public ZonedDateTime getDateTime() {
+        return dateTime;
+    }
+
+    public void setDateTime(ZonedDateTime dateTime) {
+        this.dateTime = dateTime;
     }
 }
