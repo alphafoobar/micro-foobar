@@ -81,7 +81,7 @@ If your application is already in a maven repository, you can run it with Payara
 The following command runs Payara Micro in the docker image and runs an application stored in a maven repository. The application group is `fish.payara.examples`, artifact name is `my-application`, and version is `1.0-SNAPSHOT`. The maven repository is available on host `172.17.0.10`:
 
 ```
-docker docker run -p 8080:8080 payara/micro \
+docker run -p 8080:8080 payara/micro \
  java -jar /opt/payara/payara-micro.jar \
  --deployFromGAV "fish.payara.examples,my-application,1.0-SNAPSHOT" \
  --additionalRepository https://172.17.0.10/content/repositories/snapshots
