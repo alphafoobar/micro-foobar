@@ -12,6 +12,7 @@
 
   <modules>
     <module>sample-rest</module>
+    <module>gateway</module>
   </modules>
 
   <properties>

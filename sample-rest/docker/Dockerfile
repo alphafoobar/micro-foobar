@@ -8,3 +8,6 @@ EXPOSE 5005 5006 8009 8080 8282
 
 COPY target/sample-rest-0.0.1-SNAPSHOT.war /opt/payara/deployments/sample-rest.war
 
+# To create
+# docker build -t="sample-rest" -f=Dockerfile ..
+
