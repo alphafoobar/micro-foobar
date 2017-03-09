@@ -23,7 +23,8 @@
 - Security / OAuth?
 - WebSockets?
 - RxJava
-- RabbitMQ
+- RabbitMQ or Apache Kafka?
+- Spring boot + wildfly as well?
 
 # Done
 
