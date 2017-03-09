@@ -1,5 +1,6 @@
 package kiwi.ergo.foobar.jaxrs;
 
+import javax.annotation.Nullable;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -20,9 +21,14 @@ public class MessageResource {
     @Context
     private UriInfo context;
 
+    /**
+     * Whatever endpoint for name.
+     *
+     * @param name Nullable.
+     * @return Welcome object contains greeting, name and time.
+     */
     @GET
-    @Produces("application/json")
-    public Welcome whatever(@QueryParam(value = "name") String name) {
+    public Welcome whatever(@Nullable @QueryParam(value = "name") String name) {
         logger.info("incoming request name=\"{}\"", name);
         String newName = name == null ? "duke" : name;
         return new Welcome(String.format("hey, brother: %s!", newName), newName);

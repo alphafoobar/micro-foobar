@@ -16,26 +16,17 @@ public class Configuration extends Application {
 
     @Override
     public Set<Class<?>> getClasses() {
-
         Set<Class<?>> resources = new java.util.HashSet<>();
 
         // Add root resources
         resources.add(MessageResource.class);
-        // Add JacksonFeature
-//        resources.add(JacksonJsonProvider.class);
-//        resources.add(JacksonFeature.class);
         return resources;
     }
 
     @Override
     public Map<String, Object> getProperties() {
         Map<String, Object> props = new HashMap<>();
-//        props.put("jersey.config.disableMoxyJson.server", "true");
-//        props.put(CommonProperties.MOXY_JSON_FEATURE_DISABLE, true);
-//        props.put(CommonProperties.MOXY_JSON_FEATURE_DISABLE_SERVER, true);
-
         logger.info("properties requested properties={}", props);
-
         return props;
     }
 

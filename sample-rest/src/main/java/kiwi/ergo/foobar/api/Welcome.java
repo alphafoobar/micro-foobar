@@ -15,6 +15,12 @@ public class Welcome {
 
     public Welcome() {}
 
+    /**
+     * Create Welcome. Default constructor required  for JSON deserialization.
+     *
+     * @param greeting Hello.
+     * @param name World..
+     */
     public Welcome(String greeting, String name) {
         this.greeting = greeting;
         this.name = name;
