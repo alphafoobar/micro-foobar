@@ -129,14 +129,15 @@
         <executions>
           <execution>
             <id>findbugs</id>
-            <phase>verify</phase>
             <goals>
               <goal>check</goal>
             </goals>
           </execution>
         </executions>
         <configuration>
-          <failOnError>false</failOnError>
+          <effort>Max</effort>
+          <threshold>Low</threshold>
+          <failOnError>true</failOnError>
           <encoding>UTF-8</encoding>
           <xmlOutput>true</xmlOutput>
           <findbugsXmlOutputDirectory>${project.build.directory}/findbugs

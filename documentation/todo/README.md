@@ -23,7 +23,7 @@
 - Security / OAuth?
 - WebSockets?
 - RxJava
-- RabbitMQ or Apache Kafka?
+- [RabbitMQ](https://github.com/docker-library/rabbitmq/tree/master/alpine) or Apache Kafka?
 - Spring boot + wildfly as well?
 
 # Done
