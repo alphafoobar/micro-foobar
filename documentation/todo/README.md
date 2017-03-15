@@ -5,6 +5,9 @@
   1. Enable health check on service?
   1. Add swagger.io - or alternative API tool.
   1. Netflix base - or?
+  1. [Netflix hysterix](https://github.com/Netflix/Hystrix/wiki/How-To-Use) and [dashboard](https://github.com/Netflix/Hystrix/tree/master/hystrix-dashboard)
+  1. [Pinpoint?](https://github.com/naver/pinpoint) vs App D
+  1. [Splunk / Elk log management](http://blog.takipi.com/splunk-vs-elk-the-log-management-tools-decision-making-guide/)
   1. explore Spring boot + Wildfly alternative
   1. Add test suite using grizzly? arquillian?
   1. Add conchordion / cucumber testing.
