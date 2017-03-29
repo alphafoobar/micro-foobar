@@ -18,6 +18,10 @@
      1. selenium webdriver
   1. Add Node.js client.
      1. build react / redux style UI
+  1. DB engines?
+  1. Big Data?
+  1. OAuth security implementation
+  1. Nginx load balancer / proxy cache
   1. Distributed cache [Ehcache](http://www.ehcache.org/) + [terracota](http://terracotta.org/downloads/open-source/catalog) for distributed cache.
      1. [Docker terracota image](https://github.com/anthonydahanne/terracotta-oss-docker)
   1. Include architectural diagram
