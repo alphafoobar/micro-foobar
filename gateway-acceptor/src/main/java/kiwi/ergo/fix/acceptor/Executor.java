@@ -42,7 +42,6 @@ import quickfix.FieldConvertError;
 import quickfix.LogFactory;
 import quickfix.MessageFactory;
 import quickfix.MessageStoreFactory;
-import quickfix.RuntimeError;
 import quickfix.ScreenLogFactory;
 import quickfix.SessionID;
 import quickfix.SessionSettings;
@@ -114,7 +113,7 @@ public class Executor {
             && settings.getBool(sessionId, SETTING_ACCEPTOR_TEMPLATE);
     }
 
-    private void start() throws RuntimeError, ConfigError {
+    private void start() throws ConfigError {
         acceptor.start();
     }
 
@@ -158,7 +157,7 @@ public class Executor {
         InputStream inputStream = Executor.class.getResourceAsStream(name);
         if (inputStream == null) {
             System.out.println("usage: " + Executor.class.getName() + " [configFile].");
-            System.exit(1);
+            throw new RuntimeException("Config file not declared.");
         }
         return inputStream;
     }

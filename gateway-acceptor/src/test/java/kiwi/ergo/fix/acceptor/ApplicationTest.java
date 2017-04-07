@@ -8,7 +8,6 @@ import quickfix.DefaultMessageFactory;
 import quickfix.FieldConvertError;
 import quickfix.LogFactory;
 import quickfix.NoopStoreFactory;
-import quickfix.RuntimeError;
 import quickfix.ScreenLogFactory;
 import quickfix.SessionID;
 import quickfix.SessionSettings;
@@ -32,7 +31,7 @@ public class ApplicationTest {
         try {
             return Executor.getSessionSettings("/config/quickfixj/executor.cfg");
         } catch (ConfigError | IOException e) {
-            throw new RuntimeError(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -40,7 +39,7 @@ public class ApplicationTest {
         try {
             return Application.createApplication(settings);
         } catch (FieldConvertError | ConfigError e) {
-            throw new RuntimeError(e);
+            throw new RuntimeException(e);
         }
     }
 
