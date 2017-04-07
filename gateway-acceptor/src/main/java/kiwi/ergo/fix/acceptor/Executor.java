@@ -16,6 +16,7 @@
  * Contact ask@quickfixengine.org if any conditions of this licensing
  * are not clear to you.
  */
+
 package kiwi.ergo.fix.acceptor;
 
 import static quickfix.Acceptor.SETTING_ACCEPTOR_TEMPLATE;
@@ -50,10 +51,10 @@ import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
 import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 
 public class Executor {
-    private final static Logger log = LoggerFactory.getLogger(Executor.class);
+
+    private static final Logger log = LoggerFactory.getLogger(Executor.class);
     private final SocketAcceptor acceptor;
     private final Map<InetSocketAddress, List<TemplateMapping>> dynamicSessionMappings = new HashMap<>();
-
 
     public Executor(SessionSettings settings) throws ConfigError, FieldConvertError, JMException {
         Application application = Application.createApplication(settings);
@@ -76,10 +77,10 @@ public class Executor {
         // If a session template is detected in the settings, then set up a dynamic session provider.
         Iterator<SessionID> sectionIterator = settings.sectionIterator();
         while (sectionIterator.hasNext()) {
-            SessionID sessionID = sectionIterator.next();
-            if (isSessionTemplate(settings, sessionID)) {
-                InetSocketAddress address = getAcceptorSocketAddress(settings, sessionID);
-                getMappings(address).add(new TemplateMapping(sessionID, sessionID));
+            SessionID sessionId = sectionIterator.next();
+            if (isSessionTemplate(settings, sessionId)) {
+                InetSocketAddress address = getAcceptorSocketAddress(settings, sessionId);
+                getMappings(address).add(new TemplateMapping(sessionId, sessionId));
             }
         }
 
@@ -95,21 +96,22 @@ public class Executor {
         return dynamicSessionMappings.computeIfAbsent(address, k -> new ArrayList<>());
     }
 
-    private InetSocketAddress getAcceptorSocketAddress(SessionSettings settings, SessionID sessionID)
+    private InetSocketAddress getAcceptorSocketAddress(SessionSettings settings,
+        SessionID sessionId)
             throws ConfigError, FieldConvertError {
         String acceptorHost = "0.0.0.0";
-        if (settings.isSetting(sessionID, SETTING_SOCKET_ACCEPT_ADDRESS)) {
-            acceptorHost = settings.getString(sessionID, SETTING_SOCKET_ACCEPT_ADDRESS);
+        if (settings.isSetting(sessionId, SETTING_SOCKET_ACCEPT_ADDRESS)) {
+            acceptorHost = settings.getString(sessionId, SETTING_SOCKET_ACCEPT_ADDRESS);
         }
-        int acceptorPort = (int) settings.getLong(sessionID, SETTING_SOCKET_ACCEPT_PORT);
+        int acceptorPort = (int) settings.getLong(sessionId, SETTING_SOCKET_ACCEPT_PORT);
 
         return new InetSocketAddress(acceptorHost, acceptorPort);
     }
 
-    private boolean isSessionTemplate(SessionSettings settings, SessionID sessionID)
+    private boolean isSessionTemplate(SessionSettings settings, SessionID sessionId)
             throws ConfigError, FieldConvertError {
-        return settings.isSetting(sessionID, SETTING_ACCEPTOR_TEMPLATE)
-                && settings.getBool(sessionID, SETTING_ACCEPTOR_TEMPLATE);
+        return settings.isSetting(sessionId, SETTING_ACCEPTOR_TEMPLATE)
+            && settings.getBool(sessionId, SETTING_ACCEPTOR_TEMPLATE);
     }
 
     private void start() throws RuntimeError, ConfigError {
@@ -130,8 +132,8 @@ public class Executor {
             pressAnyKeyToQuit();
 
             executor.stop();
-        } catch (ConfigError | IOException e) {
-            log.error(e.getMessage(), e);
+        } catch (ConfigError | IOException exception) {
+            log.error(exception.getMessage(), exception);
         }
     }
 

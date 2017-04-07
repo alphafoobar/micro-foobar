@@ -16,6 +16,7 @@
  * Contact ask@quickfixengine.org if any conditions of this licensing
  * are not clear to you.
  */
+
 package kiwi.ergo.fix.acceptor;
 
 /**

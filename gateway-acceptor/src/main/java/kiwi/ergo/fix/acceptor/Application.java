@@ -16,6 +16,7 @@
  * Contact ask@quickfixengine.org if any conditions of this licensing
  * are not clear to you.
  */
+
 package kiwi.ergo.fix.acceptor;
 
 import com.google.common.collect.Sets;
@@ -127,44 +128,40 @@ public class Application extends ApplicationAdapter {
     }
 
     @Override
-    public void onCreate(SessionID sessionID) {
-        Session.lookupSession(sessionID).getLog().onEvent("Valid order types: " + validOrderTypes);
+    public void onCreate(SessionID sessionId) {
+        Session.lookupSession(sessionId).getLog().onEvent("Valid order types: " + validOrderTypes);
     }
 
     @Override
-    public void fromApp(quickfix.Message message, SessionID sessionID)
+    public void fromApp(quickfix.Message message, SessionID sessionId)
         throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         if (message instanceof NewOrderSingle) {
-            onMessage((NewOrderSingle) message, sessionID);
+            onMessage((NewOrderSingle) message, sessionId);
         }
-        crack(message, sessionID);
+        crack(message, sessionId);
     }
 
     private Price getPrice(Message message) throws FieldNotFound {
-        Price price;
         if (message.getChar(OrdType.FIELD) == OrdType.LIMIT && alwaysFillLimitOrders) {
-            price = new Price(message.getDouble(Price.FIELD));
-        } else {
-            if (marketDataProvider == null) {
-                throw new RuntimeException("No market data provider specified for market order");
-            }
-            char side = message.getChar(Side.FIELD);
-            if (side == Side.BUY) {
-                price = new Price(marketDataProvider.getAsk(message.getString(Symbol.FIELD)));
-            } else if (side == Side.SELL || side == Side.SELL_SHORT) {
-                price = new Price(marketDataProvider.getBid(message.getString(Symbol.FIELD)));
-            } else {
-                throw new RuntimeException("Invalid order side: " + side);
-            }
+            return new Price(message.getDouble(Price.FIELD));
         }
-        return price;
+        if (marketDataProvider == null) {
+            throw new RuntimeException("No market data provider specified for market order");
+        }
+        char side = message.getChar(Side.FIELD);
+        if (side == Side.BUY) {
+            return new Price(marketDataProvider.getAsk(message.getString(Symbol.FIELD)));
+        } else if (side == Side.SELL || side == Side.SELL_SHORT) {
+            return new Price(marketDataProvider.getBid(message.getString(Symbol.FIELD)));
+        }
+        throw new RuntimeException("Invalid order side: " + side);
     }
 
-    private void sendMessage(SessionID sessionID, Message message) {
+    private void sendMessage(SessionID sessionId, Message message) {
         try {
-            Session session = Session.lookupSession(sessionID);
+            Session session = Session.lookupSession(sessionId);
             if (session == null) {
-                throw new SessionNotFound(sessionID.toString());
+                throw new SessionNotFound(sessionId.toString());
             }
 
             DataDictionaryProvider dataDictionaryProvider = session.getDataDictionaryProvider();
@@ -175,8 +172,8 @@ public class Application extends ApplicationAdapter {
             }
 
             session.send(message);
-        } catch (SessionNotFound | FieldNotFound | IncorrectTagValue | IncorrectDataFormat e) {
-            log.error(e.getMessage(), e);
+        } catch (SessionNotFound | FieldNotFound | IncorrectTagValue | IncorrectDataFormat exception) {
+            log.error(exception.getMessage(), exception);
         }
     }
 
@@ -192,26 +189,26 @@ public class Application extends ApplicationAdapter {
         }
     }
 
-    private void onMessage(NewOrderSingle order, SessionID sessionID) {
+    private void onMessage(NewOrderSingle order, SessionID sessionId) {
         try {
             validateOrder(order);
 
             OrderQty orderQty = order.getOrderQty();
-            Price price = getPrice(order);
-            OrderID orderID = Id.createOrderID();
-            ExecID execID = Id.createExecID();
+            OrderID orderId = Id.createOrderId();
+            ExecID execId = Id.createExecId();
 
-            ExecutionReport accept = new ExecutionReport(orderID, execID,
+            ExecutionReport accept = new ExecutionReport(orderId, execId,
                 new ExecType(ExecType.NEW), new OrdStatus(OrdStatus.NEW), order.getSide(),
                 new LeavesQty(order.getOrderQty().getValue()), new CumQty(0), new AvgPx(0));
             accept.set(order.getClOrdID());
             accept.set(order.getSymbol());
-            sendMessage(sessionID, accept);
+            sendMessage(sessionId, accept);
 
+            Price price = getPrice(order);
             if (isOrderExecutable(order, price)) {
                 ExecutionReport executionReport = new ExecutionReport(
-                    orderID,
-                    execID, new ExecType(ExecType.FILL), new OrdStatus(OrdStatus.FILLED),
+                    orderId,
+                    execId, new ExecType(ExecType.FILL), new OrdStatus(OrdStatus.FILLED),
                     order.getSide(),
                     new LeavesQty(0), new CumQty(orderQty.getValue()), new AvgPx(price.getValue()));
 
@@ -221,10 +218,10 @@ public class Application extends ApplicationAdapter {
                 executionReport.set(new LastQty(orderQty.getValue()));
                 executionReport.set(new LastPx(price.getValue()));
 
-                sendMessage(sessionID, executionReport);
+                sendMessage(sessionId, executionReport);
             }
-        } catch (IncorrectTagValue | FieldNotFound e) {
-            LogUtil.logThrowable(sessionID, e.getMessage(), e);
+        } catch (IncorrectTagValue | FieldNotFound exception) {
+            LogUtil.logThrowable(sessionId, exception.getMessage(), exception);
         }
     }
 }

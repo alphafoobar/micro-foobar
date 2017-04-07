@@ -29,7 +29,7 @@ public enum Id {
         .appendValue(SECOND_OF_MINUTE, 2)
         .toFormatter();
 
-    public static OrderID createOrderID() {
+    public static OrderID createOrderId() {
         return new OrderID(createId());
     }
 
@@ -38,7 +38,7 @@ public enum Id {
             .randomUUID().toString();
     }
 
-    public static ExecID createExecID() {
+    public static ExecID createExecId() {
         return new ExecID(createId());
     }
 }
