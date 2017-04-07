@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) quickfixengine.org  All rights reserved.
  *
  * This file is part of the QuickFIX FIX Engine
@@ -15,8 +15,7 @@
  *
  * Contact ask@quickfixengine.org if any conditions of this licensing
  * are not clear to you.
- ******************************************************************************/
-
+ */
 package kiwi.ergo.fix.acceptor;
 
 /**

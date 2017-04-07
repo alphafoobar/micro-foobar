@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) quickfixengine.org  All rights reserved.
  *
  * This file is part of the QuickFIX FIX Engine
@@ -15,8 +15,7 @@
  *
  * Contact ask@quickfixengine.org if any conditions of this licensing
  * are not clear to you.
- ******************************************************************************/
-
+ */
 package kiwi.ergo.fix.acceptor;
 
 import static quickfix.Acceptor.SETTING_ACCEPTOR_TEMPLATE;
@@ -25,6 +24,7 @@ import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_PORT;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -133,8 +133,7 @@ public class Executor {
             Executor executor = new Executor(settings);
             executor.start();
 
-            System.out.println("press <enter> to quit");
-            System.in.read();
+            pressAnyKeyToQuit();
 
             executor.stop();
         } catch (Exception e) {
@@ -142,17 +141,25 @@ public class Executor {
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private static void pressAnyKeyToQuit() throws IOException {
+        System.out.println("press <enter> to quit");
+        System.in.read();
+    }
+
     private static InputStream getSettingsInputStream(String[] args) throws FileNotFoundException {
-        InputStream inputStream = null;
-        if (args.length == 0) {
-            inputStream = Executor.class.getResourceAsStream("/config/quickfixj/executor.cfg");
-        } else if (args.length == 1) {
-            inputStream = new FileInputStream(args[0]);
-        }
+        InputStream inputStream = getInputStream(args);
         if (inputStream == null) {
             System.out.println("usage: " + Executor.class.getName() + " [configFile].");
             System.exit(1);
         }
         return inputStream;
+    }
+
+    private static InputStream getInputStream(String[] args) throws FileNotFoundException {
+        if (args.length == 0) {
+            return Executor.class.getResourceAsStream("/config/quickfixj/executor.cfg");
+        }
+        return new FileInputStream(args[0]);
     }
 }

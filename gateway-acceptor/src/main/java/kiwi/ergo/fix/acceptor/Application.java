@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Copyright (c) quickfixengine.org  All rights reserved.
  *
  * This file is part of the QuickFIX FIX Engine
@@ -15,26 +15,13 @@
  *
  * Contact ask@quickfixengine.org if any conditions of this licensing
  * are not clear to you.
- ******************************************************************************/
-
+ */
 package kiwi.ergo.fix.acceptor;
 
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.HOUR_OF_DAY;
-import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
-import static java.time.temporal.ChronoField.YEAR;
-
 import java.math.BigDecimal;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import quickfix.ConfigError;
@@ -54,7 +41,6 @@ import quickfix.SessionID;
 import quickfix.SessionNotFound;
 import quickfix.SessionSettings;
 import quickfix.UnsupportedMessageType;
-import quickfix.field.ApplVerID;
 import quickfix.field.AvgPx;
 import quickfix.field.CumQty;
 import quickfix.field.ExecID;
@@ -74,16 +60,6 @@ import quickfix.fix44.NewOrderSingle;
 
 public class Application extends quickfix.MessageCracker implements quickfix.Application {
 
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
-        .parseCaseInsensitive()
-        .appendValue(YEAR, 4)
-        .appendValue(MONTH_OF_YEAR, 2)
-        .appendValue(DAY_OF_MONTH, 2)
-        .appendLiteral('-')
-        .appendValue(HOUR_OF_DAY, 2)
-        .appendValue(MINUTE_OF_HOUR, 2)
-        .appendValue(SECOND_OF_MINUTE, 2)
-        .toFormatter();
     private static final String DEFAULT_MARKET_PRICE_KEY = "DefaultMarketPrice";
     private static final String ALWAYS_FILL_LIMIT_KEY = "AlwaysFillLimitOrders";
     private static final String VALID_ORDER_TYPES_KEY = "ValidOrderTypes";
@@ -91,22 +67,21 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final boolean alwaysFillLimitOrders;
     private final HashSet<String> validOrderTypes = new HashSet<>();
-    private MarketDataProvider marketDataProvider;
+    private final MarketDataProvider marketDataProvider;
 
     public Application(SessionSettings settings) throws ConfigError, FieldConvertError {
         initializeValidOrderTypes(settings);
-        initializeMarketDataProvider(settings);
+        marketDataProvider = initializeMarketDataProvider(settings);
 
         alwaysFillLimitOrders =
             settings.isSetting(ALWAYS_FILL_LIMIT_KEY) && settings.getBool(ALWAYS_FILL_LIMIT_KEY);
     }
 
-    private void initializeMarketDataProvider(SessionSettings settings)
+    private MarketDataProvider initializeMarketDataProvider(SessionSettings settings)
         throws ConfigError, FieldConvertError {
         if (settings.isSetting(DEFAULT_MARKET_PRICE_KEY)) {
-            if (marketDataProvider == null) {
-                final double defaultMarketPrice = settings.getDouble(DEFAULT_MARKET_PRICE_KEY);
-                marketDataProvider = new MarketDataProvider() {
+            double defaultMarketPrice = settings.getDouble(DEFAULT_MARKET_PRICE_KEY);
+            return new MarketDataProvider() {
                     public double getAsk(String symbol) {
                         return defaultMarketPrice;
                     }
@@ -115,11 +90,9 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
                         return defaultMarketPrice;
                     }
                 };
-            } else {
-                log.warn(
-                    "Ignoring " + DEFAULT_MARKET_PRICE_KEY + " since provider is already defined.");
             }
-        }
+        log.warn("Ignoring " + DEFAULT_MARKET_PRICE_KEY + " since provider is already defined.");
+        return null;
     }
 
     private void initializeValidOrderTypes(SessionSettings settings)
@@ -162,8 +135,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
 
     @Override
     public void fromApp(quickfix.Message message, SessionID sessionID)
-        throws FieldNotFound, IncorrectDataFormat,
-        IncorrectTagValue, UnsupportedMessageType {
+        throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         if (message instanceof NewOrderSingle) {
             onMessage((NewOrderSingle) message, sessionID);
         }
@@ -235,7 +207,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
         }
     }
 
-    public void onMessage(NewOrderSingle order, SessionID sessionID)
+    private void onMessage(NewOrderSingle order, SessionID sessionID)
         throws FieldNotFound,
         UnsupportedMessageType, IncorrectTagValue {
         try {
@@ -243,8 +215,8 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
 
             OrderQty orderQty = order.getOrderQty();
             Price price = getPrice(order);
-            OrderID orderID = createOrderID();
-            ExecID execID = createExecID();
+            OrderID orderID = Id.createOrderID();
+            ExecID execID = Id.createExecID();
 
             ExecutionReport accept = new ExecutionReport(orderID, execID,
                 new ExecType(ExecType.NEW), new OrdStatus(OrdStatus.NEW), order.getSide(),
@@ -271,25 +243,5 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
         } catch (RuntimeException e) {
             LogUtil.logThrowable(sessionID, e.getMessage(), e);
         }
-    }
-
-    public OrderID createOrderID() {
-        return new OrderID(createId());
-    }
-
-    private String createId() {
-        return ZonedDateTime.now(ZoneId.of("UTC")).format(DATE_TIME_FORMATTER) + "-" + UUID
-            .randomUUID().toString();
-    }
-
-    public ExecID createExecID() {
-        return new ExecID(createId());
-    }
-
-    /**
-     * Allows a custom market data provider to be specified.
-     */
-    public void setMarketDataProvider(MarketDataProvider marketDataProvider) {
-        this.marketDataProvider = marketDataProvider;
     }
 }
