@@ -22,7 +22,6 @@ import static quickfix.Acceptor.SETTING_ACCEPTOR_TEMPLATE;
 import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_ADDRESS;
 import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_PORT;
 
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,10 +34,10 @@ import java.util.Map;
 import javax.management.JMException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import quickfix.CachedFileStoreFactory;
 import quickfix.ConfigError;
 import quickfix.DefaultMessageFactory;
 import quickfix.FieldConvertError;
-import quickfix.FileStoreFactory;
 import quickfix.LogFactory;
 import quickfix.MessageFactory;
 import quickfix.MessageStoreFactory;
@@ -57,8 +56,9 @@ public class Executor {
 
 
     public Executor(SessionSettings settings) throws ConfigError, FieldConvertError, JMException {
-        Application application = new Application(settings);
-        MessageStoreFactory messageStoreFactory = new FileStoreFactory(settings);
+        Application application = Application.createApplication(settings);
+
+        MessageStoreFactory messageStoreFactory = new CachedFileStoreFactory(settings);
         LogFactory logFactory = new ScreenLogFactory(true, true, true);
         MessageFactory messageFactory = new DefaultMessageFactory();
 
@@ -72,11 +72,8 @@ public class Executor {
     private void configureDynamicSessions(SessionSettings settings, Application application,
             MessageStoreFactory messageStoreFactory, LogFactory logFactory,
             MessageFactory messageFactory) throws ConfigError, FieldConvertError {
-        //
-        // If a session template is detected in the settings, then
-        // set up a dynamic session provider.
-        //
 
+        // If a session template is detected in the settings, then set up a dynamic session provider.
         Iterator<SessionID> sectionIterator = settings.sectionIterator();
         while (sectionIterator.hasNext()) {
             SessionID sessionID = sectionIterator.next();
@@ -95,8 +92,7 @@ public class Executor {
     }
 
     private List<TemplateMapping> getMappings(InetSocketAddress address) {
-        return dynamicSessionMappings
-            .computeIfAbsent(address, k -> new ArrayList<>());
+        return dynamicSessionMappings.computeIfAbsent(address, k -> new ArrayList<>());
     }
 
     private InetSocketAddress getAcceptorSocketAddress(SessionSettings settings, SessionID sessionID)
@@ -126,9 +122,7 @@ public class Executor {
 
     public static void main(String[] args) throws Exception {
         try {
-            InputStream inputStream = getSettingsInputStream(args);
-            SessionSettings settings = new SessionSettings(inputStream);
-            inputStream.close();
+            SessionSettings settings = getSessionSettings(getConfigFromArgsOrDefault(args));
 
             Executor executor = new Executor(settings);
             executor.start();
@@ -136,8 +130,19 @@ public class Executor {
             pressAnyKeyToQuit();
 
             executor.stop();
-        } catch (Exception e) {
+        } catch (ConfigError | IOException e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    private static String getConfigFromArgsOrDefault(String[] args) {
+        return args.length == 0 ? "/config/quickfixj/executor.cfg" : args[0];
+    }
+
+    static SessionSettings getSessionSettings(String name)
+        throws ConfigError, IOException {
+        try (InputStream inputStream = getSettingsInputStream(name)) {
+            return new SessionSettings(inputStream);
         }
     }
 
@@ -147,19 +152,12 @@ public class Executor {
         System.in.read();
     }
 
-    private static InputStream getSettingsInputStream(String[] args) throws FileNotFoundException {
-        InputStream inputStream = getInputStream(args);
+    private static InputStream getSettingsInputStream(String name) throws FileNotFoundException {
+        InputStream inputStream = Executor.class.getResourceAsStream(name);
         if (inputStream == null) {
             System.out.println("usage: " + Executor.class.getName() + " [configFile].");
             System.exit(1);
         }
         return inputStream;
-    }
-
-    private static InputStream getInputStream(String[] args) throws FileNotFoundException {
-        if (args.length == 0) {
-            return Executor.class.getResourceAsStream("/config/quickfixj/executor.cfg");
-        }
-        return new FileInputStream(args[0]);
     }
 }

@@ -18,15 +18,16 @@
  */
 package kiwi.ergo.fix.acceptor;
 
+import com.google.common.collect.Sets;
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import quickfix.ConfigError;
 import quickfix.DataDictionaryProvider;
-import quickfix.DoNotSend;
 import quickfix.FieldConvertError;
 import quickfix.FieldNotFound;
 import quickfix.FixVersions;
@@ -35,7 +36,6 @@ import quickfix.IncorrectTagValue;
 import quickfix.LogUtil;
 import quickfix.Message;
 import quickfix.MessageUtils;
-import quickfix.RejectLogon;
 import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionNotFound;
@@ -58,88 +58,59 @@ import quickfix.field.Symbol;
 import quickfix.fix44.ExecutionReport;
 import quickfix.fix44.NewOrderSingle;
 
-public class Application extends quickfix.MessageCracker implements quickfix.Application {
+public class Application extends ApplicationAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(Application.class);
 
     private static final String DEFAULT_MARKET_PRICE_KEY = "DefaultMarketPrice";
     private static final String ALWAYS_FILL_LIMIT_KEY = "AlwaysFillLimitOrders";
     private static final String VALID_ORDER_TYPES_KEY = "ValidOrderTypes";
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-    private final boolean alwaysFillLimitOrders;
-    private final HashSet<String> validOrderTypes = new HashSet<>();
+    private final Set<String> validOrderTypes = Sets.newHashSet();
     private final MarketDataProvider marketDataProvider;
+    private final boolean alwaysFillLimitOrders;
 
-    public Application(SessionSettings settings) throws ConfigError, FieldConvertError {
-        initializeValidOrderTypes(settings);
-        marketDataProvider = initializeMarketDataProvider(settings);
-
-        alwaysFillLimitOrders =
-            settings.isSetting(ALWAYS_FILL_LIMIT_KEY) && settings.getBool(ALWAYS_FILL_LIMIT_KEY);
+    private Application(SessionSettings settings) throws ConfigError, FieldConvertError {
+        validOrderTypes.addAll(getValidOrderTypes(settings));
+        marketDataProvider = getMarketDataProvider(settings);
+        alwaysFillLimitOrders = isAlwaysFillLimitOrders(settings);
     }
 
-    private MarketDataProvider initializeMarketDataProvider(SessionSettings settings)
+    static Application createApplication(SessionSettings settings)
+        throws FieldConvertError, ConfigError {
+        return new Application(settings);
+    }
+
+    private static boolean isAlwaysFillLimitOrders(SessionSettings settings)
+        throws ConfigError, FieldConvertError {
+        return settings.isSetting(ALWAYS_FILL_LIMIT_KEY) && settings.getBool(ALWAYS_FILL_LIMIT_KEY);
+    }
+
+    private static MarketDataProvider getMarketDataProvider(SessionSettings settings)
         throws ConfigError, FieldConvertError {
         if (settings.isSetting(DEFAULT_MARKET_PRICE_KEY)) {
             double defaultMarketPrice = settings.getDouble(DEFAULT_MARKET_PRICE_KEY);
             return new MarketDataProvider() {
-                    public double getAsk(String symbol) {
-                        return defaultMarketPrice;
-                    }
+                public double getAsk(String symbol) {
+                    return defaultMarketPrice;
+                }
 
-                    public double getBid(String symbol) {
-                        return defaultMarketPrice;
-                    }
-                };
-            }
-        log.warn("Ignoring " + DEFAULT_MARKET_PRICE_KEY + " since provider is already defined.");
+                public double getBid(String symbol) {
+                    return defaultMarketPrice;
+                }
+            };
+        }
+        log.warn("Ignoring " + DEFAULT_MARKET_PRICE_KEY + " since no provider defined.");
         return null;
     }
 
-    private void initializeValidOrderTypes(SessionSettings settings)
-        throws ConfigError, FieldConvertError {
+    private static List<String> getValidOrderTypes(SessionSettings settings)
+        throws FieldConvertError, ConfigError {
         if (settings.isSetting(VALID_ORDER_TYPES_KEY)) {
-            List<String> orderTypes = Arrays
+            return Arrays
                 .asList(settings.getString(VALID_ORDER_TYPES_KEY).trim().split("\\s*,\\s*"));
-            validOrderTypes.addAll(orderTypes);
-        } else {
-            validOrderTypes.add(OrdType.LIMIT + "");
         }
-    }
-
-    @Override
-    public void onCreate(SessionID sessionID) {
-        Session.lookupSession(sessionID).getLog().onEvent("Valid order types: " + validOrderTypes);
-    }
-
-    @Override
-    public void onLogon(SessionID sessionID) {
-    }
-
-    @Override
-    public void onLogout(SessionID sessionID) {
-    }
-
-    @Override
-    public void toAdmin(quickfix.Message message, SessionID sessionID) {
-    }
-
-    @Override
-    public void toApp(quickfix.Message message, SessionID sessionID) throws DoNotSend {
-    }
-
-    @Override
-    public void fromAdmin(quickfix.Message message, SessionID sessionID)
-        throws FieldNotFound, IncorrectDataFormat,
-        IncorrectTagValue, RejectLogon {
-    }
-
-    @Override
-    public void fromApp(quickfix.Message message, SessionID sessionID)
-        throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
-        if (message instanceof NewOrderSingle) {
-            onMessage((NewOrderSingle) message, sessionID);
-        }
-        crack(message, sessionID);
+        return Collections.singletonList(OrdType.LIMIT + "");
     }
 
     private boolean isOrderExecutable(Message order, Price price) throws FieldNotFound {
@@ -153,6 +124,20 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
                 && thePrice.compareTo(limitPrice) >= 0);
         }
         return true;
+    }
+
+    @Override
+    public void onCreate(SessionID sessionID) {
+        Session.lookupSession(sessionID).getLog().onEvent("Valid order types: " + validOrderTypes);
+    }
+
+    @Override
+    public void fromApp(quickfix.Message message, SessionID sessionID)
+        throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
+        if (message instanceof NewOrderSingle) {
+            onMessage((NewOrderSingle) message, sessionID);
+        }
+        crack(message, sessionID);
     }
 
     private Price getPrice(Message message) throws FieldNotFound {
@@ -207,9 +192,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
         }
     }
 
-    private void onMessage(NewOrderSingle order, SessionID sessionID)
-        throws FieldNotFound,
-        UnsupportedMessageType, IncorrectTagValue {
+    private void onMessage(NewOrderSingle order, SessionID sessionID) {
         try {
             validateOrder(order);
 
@@ -240,7 +223,7 @@ public class Application extends quickfix.MessageCracker implements quickfix.App
 
                 sendMessage(sessionID, executionReport);
             }
-        } catch (RuntimeException e) {
+        } catch (IncorrectTagValue | FieldNotFound e) {
             LogUtil.logThrowable(sessionID, e.getMessage(), e);
         }
     }
