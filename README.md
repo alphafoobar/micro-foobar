@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/alphafoobar/micro-foobar.svg?token=podzVPssSATxhs9wz2Q7&branch=master)](https://travis-ci.com/alphafoobar/micro-foobar)
+[![Build Status](https://travis-ci.com/alphafoobar/micro-foobar.svg?token=podzVPssSATxhs9wz2Q7&branch=master)](https://travis-ci.com/alphafoobar/micro-foobar) [![codecov](https://codecov.io/gh/alphafoobar/micro-foobar/branch/master/graph/badge.svg?token=2UsZzL66No)](https://codecov.io/gh/alphafoobar/micro-foobar)
+
 
 # micro-foobar
 
