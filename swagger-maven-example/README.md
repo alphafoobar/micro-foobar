@@ -1,4 +1,4 @@
-Swagger Maven Plugin Example [![Build Status](https://travis-ci.org/kongchen/swagger-maven-example.png)](https://travis-ci.org/kongchen/swagger-maven-example)
+Swagger Maven Plugin Example
 
 This project is an example of using [Swagger-maven-plugin](https://github.com/kongchen/swagger-maven-plugin).
 
