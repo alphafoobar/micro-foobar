@@ -137,8 +137,9 @@ public class Application extends ApplicationAdapter {
         throws FieldNotFound, IncorrectDataFormat, IncorrectTagValue, UnsupportedMessageType {
         if (message instanceof NewOrderSingle) {
             onMessage((NewOrderSingle) message, sessionId);
+        } else {
+            crack(message, sessionId);
         }
-        crack(message, sessionId);
     }
 
     private Price getPrice(Message message) throws FieldNotFound {
@@ -170,7 +171,6 @@ public class Application extends ApplicationAdapter {
                     MessageUtils.toApplVerID(FixVersions.BEGINSTRING_FIX44))
                     .validate(message, true);
             }
-
             session.send(message);
         } catch (SessionNotFound | FieldNotFound | IncorrectTagValue | IncorrectDataFormat exception) {
             log.error(exception.getMessage(), exception);
