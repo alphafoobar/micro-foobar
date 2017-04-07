@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/alphafoobar/micro-foobar.svg?token=podzVPssSATxhs9wz2Q7&branch=master)](https://travis-ci.com/alphafoobar/micro-foobar)
+
 # micro-foobar
 
 This project is constructed as a monolithic repository, intended to contain both
