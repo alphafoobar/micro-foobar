@@ -17,7 +17,7 @@
  * are not clear to you.
  */
 
-package kiwi.ergo.fix.acceptor;
+package kiwi.ergo.fix.marketdata;
 
 /**
  * Trivial market data provider interface to allow plugins for

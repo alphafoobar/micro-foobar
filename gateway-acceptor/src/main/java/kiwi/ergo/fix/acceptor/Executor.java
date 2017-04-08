@@ -33,6 +33,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.management.JMException;
+import kiwi.ergo.fix.marketdata.MarketDataFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import quickfix.CachedFileStoreFactory;
@@ -52,11 +53,12 @@ import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 public class Executor {
 
     private static final Logger log = LoggerFactory.getLogger(Executor.class);
-    private final SocketAcceptor acceptor;
     private final Map<InetSocketAddress, List<TemplateMapping>> dynamicSessionMappings = new HashMap<>();
+    private final SocketAcceptor acceptor;
 
     public Executor(SessionSettings settings) throws ConfigError, FieldConvertError, JMException {
-        Application application = Application.createApplication(settings);
+        Application application = Application.createApplication(settings, new FixSession(),
+            MarketDataFactory.createMarketDataProvider(settings));
 
         MessageStoreFactory messageStoreFactory = new CachedFileStoreFactory(settings);
         LogFactory logFactory = new ScreenLogFactory(true, true, true);
@@ -140,8 +142,7 @@ public class Executor {
         return args.length == 0 ? "/config/quickfixj/executor.cfg" : args[0];
     }
 
-    static SessionSettings getSessionSettings(String name)
-        throws ConfigError, IOException {
+    static SessionSettings getSessionSettings(String name) throws ConfigError, IOException {
         try (InputStream inputStream = getSettingsInputStream(name)) {
             return new SessionSettings(inputStream);
         }

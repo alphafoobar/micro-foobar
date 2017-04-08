@@ -25,21 +25,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import javax.annotation.Nonnull;
+import kiwi.ergo.fix.marketdata.MarketDataProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import quickfix.ConfigError;
-import quickfix.DataDictionaryProvider;
 import quickfix.FieldConvertError;
 import quickfix.FieldNotFound;
-import quickfix.FixVersions;
 import quickfix.IncorrectDataFormat;
 import quickfix.IncorrectTagValue;
 import quickfix.LogUtil;
 import quickfix.Message;
-import quickfix.MessageUtils;
-import quickfix.Session;
 import quickfix.SessionID;
-import quickfix.SessionNotFound;
 import quickfix.SessionSettings;
 import quickfix.UnsupportedMessageType;
 import quickfix.field.AvgPx;
@@ -63,46 +60,23 @@ public class Application extends ApplicationAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(Application.class);
 
-    private static final String DEFAULT_MARKET_PRICE_KEY = "DefaultMarketPrice";
-    private static final String ALWAYS_FILL_LIMIT_KEY = "AlwaysFillLimitOrders";
     private static final String VALID_ORDER_TYPES_KEY = "ValidOrderTypes";
 
     private final Set<String> validOrderTypes = Sets.newHashSet();
     private final MarketDataProvider marketDataProvider;
-    private final boolean alwaysFillLimitOrders;
+    private final FixSession fixSession;
 
-    private Application(SessionSettings settings) throws ConfigError, FieldConvertError {
+    private Application(@Nonnull SessionSettings settings, @Nonnull FixSession fixSession,
+        @Nonnull MarketDataProvider marketDataProvider) throws ConfigError, FieldConvertError {
+        this.fixSession = fixSession;
         validOrderTypes.addAll(getValidOrderTypes(settings));
-        marketDataProvider = getMarketDataProvider(settings);
-        alwaysFillLimitOrders = isAlwaysFillLimitOrders(settings);
+        this.marketDataProvider = marketDataProvider;
     }
 
-    static Application createApplication(SessionSettings settings)
+    static Application createApplication(SessionSettings settings, FixSession fixSession,
+        MarketDataProvider marketDataProvider)
         throws FieldConvertError, ConfigError {
-        return new Application(settings);
-    }
-
-    private static boolean isAlwaysFillLimitOrders(SessionSettings settings)
-        throws ConfigError, FieldConvertError {
-        return settings.isSetting(ALWAYS_FILL_LIMIT_KEY) && settings.getBool(ALWAYS_FILL_LIMIT_KEY);
-    }
-
-    private static MarketDataProvider getMarketDataProvider(SessionSettings settings)
-        throws ConfigError, FieldConvertError {
-        if (settings.isSetting(DEFAULT_MARKET_PRICE_KEY)) {
-            double defaultMarketPrice = settings.getDouble(DEFAULT_MARKET_PRICE_KEY);
-            return new MarketDataProvider() {
-                public double getAsk(String symbol) {
-                    return defaultMarketPrice;
-                }
-
-                public double getBid(String symbol) {
-                    return defaultMarketPrice;
-                }
-            };
-        }
-        log.warn("Ignoring " + DEFAULT_MARKET_PRICE_KEY + " since no provider defined.");
-        return null;
+        return new Application(settings, fixSession, marketDataProvider);
     }
 
     private static List<String> getValidOrderTypes(SessionSettings settings)
@@ -129,7 +103,7 @@ public class Application extends ApplicationAdapter {
 
     @Override
     public void onCreate(SessionID sessionId) {
-        Session.lookupSession(sessionId).getLog().onEvent("Valid order types: " + validOrderTypes);
+        fixSession.onCreate(sessionId);
     }
 
     @Override
@@ -138,43 +112,18 @@ public class Application extends ApplicationAdapter {
         if (message instanceof NewOrderSingle) {
             onMessage((NewOrderSingle) message, sessionId);
         } else {
-            crack(message, sessionId);
+            log.warn("[{}] Unsupported message: {}", sessionId, message);
         }
     }
 
-    private Price getPrice(Message message) throws FieldNotFound {
-        if (message.getChar(OrdType.FIELD) == OrdType.LIMIT && alwaysFillLimitOrders) {
-            return new Price(message.getDouble(Price.FIELD));
-        }
-        if (marketDataProvider == null) {
-            throw new RuntimeException("No market data provider specified for market order");
-        }
+    private Price getPrice(Message message) throws FieldNotFound, IncorrectTagValue {
         char side = message.getChar(Side.FIELD);
         if (side == Side.BUY) {
             return new Price(marketDataProvider.getAsk(message.getString(Symbol.FIELD)));
         } else if (side == Side.SELL || side == Side.SELL_SHORT) {
             return new Price(marketDataProvider.getBid(message.getString(Symbol.FIELD)));
         }
-        throw new RuntimeException("Invalid order side: " + side);
-    }
-
-    private void sendMessage(SessionID sessionId, Message message) {
-        try {
-            Session session = Session.lookupSession(sessionId);
-            if (session == null) {
-                throw new SessionNotFound(sessionId.toString());
-            }
-
-            DataDictionaryProvider dataDictionaryProvider = session.getDataDictionaryProvider();
-            if (dataDictionaryProvider != null) {
-                dataDictionaryProvider.getApplicationDataDictionary(
-                    MessageUtils.toApplVerID(FixVersions.BEGINSTRING_FIX44))
-                    .validate(message, true);
-            }
-            session.send(message);
-        } catch (SessionNotFound | FieldNotFound | IncorrectTagValue | IncorrectDataFormat exception) {
-            log.error(exception.getMessage(), exception);
-        }
+        throw new IncorrectTagValue("Invalid order side: " + side);
     }
 
     private void validateOrder(Message order) throws IncorrectTagValue, FieldNotFound {
@@ -183,13 +132,10 @@ public class Application extends ApplicationAdapter {
             log.error("Order type not in ValidOrderTypes setting");
             throw new IncorrectTagValue(ordType.getField());
         }
-        if (ordType.getValue() == OrdType.MARKET && marketDataProvider == null) {
-            log.error("DefaultMarketPrice setting not specified for market order");
-            throw new IncorrectTagValue(ordType.getField());
-        }
     }
 
-    private void onMessage(NewOrderSingle order, SessionID sessionId) {
+    private void onMessage(NewOrderSingle order, SessionID sessionId)
+        throws IncorrectTagValue, FieldNotFound {
         try {
             validateOrder(order);
 
@@ -202,7 +148,7 @@ public class Application extends ApplicationAdapter {
                 new LeavesQty(order.getOrderQty().getValue()), new CumQty(0), new AvgPx(0));
             accept.set(order.getClOrdID());
             accept.set(order.getSymbol());
-            sendMessage(sessionId, accept);
+            fixSession.sendMessage(sessionId, accept);
 
             Price price = getPrice(order);
             if (isOrderExecutable(order, price)) {
@@ -218,10 +164,11 @@ public class Application extends ApplicationAdapter {
                 executionReport.set(new LastQty(orderQty.getValue()));
                 executionReport.set(new LastPx(price.getValue()));
 
-                sendMessage(sessionId, executionReport);
+                fixSession.sendMessage(sessionId, executionReport);
             }
         } catch (IncorrectTagValue | FieldNotFound exception) {
             LogUtil.logThrowable(sessionId, exception.getMessage(), exception);
+            throw exception;
         }
     }
 }
