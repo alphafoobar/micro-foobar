@@ -13,7 +13,7 @@ import quickfix.Session;
 import quickfix.SessionID;
 import quickfix.SessionNotFound;
 
-public class FixSession {
+class FixSession {
 
     private static final Logger log = LoggerFactory.getLogger(FixSession.class);
 
@@ -22,7 +22,7 @@ public class FixSession {
     void onCreate(SessionID sessionId) {
         session = Session.lookupSession(sessionId);
         if (session == null) {
-            log.error("Session not found, sessionId=" + sessionId.toString());
+            log.error("Session not found: sessionId=" + sessionId.toString());
         } else {
             session.getLog().onEvent("Session created, sessionId=" + sessionId.toString());
         }
@@ -31,7 +31,7 @@ public class FixSession {
     void sendMessage(SessionID sessionId, Message message) {
         try {
             if (session == null || !session.getSessionID().equals(sessionId)) {
-                throw new SessionNotFound(sessionId.toString());
+                throw new SessionNotFound("sessionId=" + sessionId.toString());
             }
 
             DataDictionaryProvider dataDictionaryProvider = session.getDataDictionaryProvider();

@@ -1,18 +1,20 @@
 package kiwi.ergo.fix.marketdata;
 
+import java.math.BigDecimal;
+
 public class DummyMarketDataProvider implements MarketDataProvider {
 
-    private final double defaultMarketPrice;
+    private final BigDecimal defaultMarketPrice;
 
-    DummyMarketDataProvider(double defaultMarketPrice) {
+    DummyMarketDataProvider(BigDecimal defaultMarketPrice) {
         this.defaultMarketPrice = defaultMarketPrice;
     }
 
-    public double getAsk(String symbol) {
+    public BigDecimal getAsk(String symbol) {
         return defaultMarketPrice;
     }
 
-    public double getBid(String symbol) {
+    public BigDecimal getBid(String symbol) {
         return defaultMarketPrice;
     }
 

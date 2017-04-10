@@ -119,9 +119,11 @@ public class Application extends ApplicationAdapter {
     private Price getPrice(Message message) throws FieldNotFound, IncorrectTagValue {
         char side = message.getChar(Side.FIELD);
         if (side == Side.BUY) {
-            return new Price(marketDataProvider.getAsk(message.getString(Symbol.FIELD)));
+            return new Price(
+                marketDataProvider.getAsk(message.getString(Symbol.FIELD)).doubleValue());
         } else if (side == Side.SELL || side == Side.SELL_SHORT) {
-            return new Price(marketDataProvider.getBid(message.getString(Symbol.FIELD)));
+            return new Price(
+                marketDataProvider.getBid(message.getString(Symbol.FIELD)).doubleValue());
         }
         throw new IncorrectTagValue("Invalid order side: " + side);
     }

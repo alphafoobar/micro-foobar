@@ -19,13 +19,15 @@
 
 package kiwi.ergo.fix.marketdata;
 
+import java.math.BigDecimal;
+
 /**
  * Trivial market data provider interface to allow plugins for
  * alternative market data sources.
  */
 public interface MarketDataProvider {
 
-    double getBid(String symbol);
+    BigDecimal getBid(String symbol);
 
-    double getAsk(String symbol);
+    BigDecimal getAsk(String symbol);
 }

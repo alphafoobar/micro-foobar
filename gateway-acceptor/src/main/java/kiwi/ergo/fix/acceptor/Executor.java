@@ -19,19 +19,9 @@
 
 package kiwi.ergo.fix.acceptor;
 
-import static quickfix.Acceptor.SETTING_ACCEPTOR_TEMPLATE;
-import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_ADDRESS;
-import static quickfix.Acceptor.SETTING_SOCKET_ACCEPT_PORT;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import javax.management.JMException;
 import kiwi.ergo.fix.marketdata.MarketDataFactory;
 import org.slf4j.Logger;
@@ -44,16 +34,12 @@ import quickfix.LogFactory;
 import quickfix.MessageFactory;
 import quickfix.MessageStoreFactory;
 import quickfix.ScreenLogFactory;
-import quickfix.SessionID;
 import quickfix.SessionSettings;
 import quickfix.SocketAcceptor;
-import quickfix.mina.acceptor.DynamicAcceptorSessionProvider;
-import quickfix.mina.acceptor.DynamicAcceptorSessionProvider.TemplateMapping;
 
 public class Executor {
 
     private static final Logger log = LoggerFactory.getLogger(Executor.class);
-    private final Map<InetSocketAddress, List<TemplateMapping>> dynamicSessionMappings = new HashMap<>();
     private final SocketAcceptor acceptor;
 
     public Executor(SessionSettings settings) throws ConfigError, FieldConvertError, JMException {
@@ -66,53 +52,6 @@ public class Executor {
 
         acceptor = new SocketAcceptor(application, messageStoreFactory, settings, logFactory,
                 messageFactory);
-
-        configureDynamicSessions(settings, application, messageStoreFactory, logFactory,
-                messageFactory);
-    }
-
-    private void configureDynamicSessions(SessionSettings settings, Application application,
-            MessageStoreFactory messageStoreFactory, LogFactory logFactory,
-            MessageFactory messageFactory) throws ConfigError, FieldConvertError {
-
-        // If a session template is detected in the settings, then set up a dynamic session provider.
-        Iterator<SessionID> sectionIterator = settings.sectionIterator();
-        while (sectionIterator.hasNext()) {
-            SessionID sessionId = sectionIterator.next();
-            if (isSessionTemplate(settings, sessionId)) {
-                InetSocketAddress address = getAcceptorSocketAddress(settings, sessionId);
-                getMappings(address).add(new TemplateMapping(sessionId, sessionId));
-            }
-        }
-
-        for (Map.Entry<InetSocketAddress, List<TemplateMapping>> entry : dynamicSessionMappings
-                .entrySet()) {
-            acceptor.setSessionProvider(entry.getKey(), new DynamicAcceptorSessionProvider(
-                    settings, entry.getValue(), application, messageStoreFactory, logFactory,
-                    messageFactory));
-        }
-    }
-
-    private List<TemplateMapping> getMappings(InetSocketAddress address) {
-        return dynamicSessionMappings.computeIfAbsent(address, k -> new ArrayList<>());
-    }
-
-    private InetSocketAddress getAcceptorSocketAddress(SessionSettings settings,
-        SessionID sessionId)
-            throws ConfigError, FieldConvertError {
-        String acceptorHost = "0.0.0.0";
-        if (settings.isSetting(sessionId, SETTING_SOCKET_ACCEPT_ADDRESS)) {
-            acceptorHost = settings.getString(sessionId, SETTING_SOCKET_ACCEPT_ADDRESS);
-        }
-        int acceptorPort = (int) settings.getLong(sessionId, SETTING_SOCKET_ACCEPT_PORT);
-
-        return new InetSocketAddress(acceptorHost, acceptorPort);
-    }
-
-    private boolean isSessionTemplate(SessionSettings settings, SessionID sessionId)
-            throws ConfigError, FieldConvertError {
-        return settings.isSetting(sessionId, SETTING_ACCEPTOR_TEMPLATE)
-            && settings.getBool(sessionId, SETTING_ACCEPTOR_TEMPLATE);
     }
 
     private void start() throws ConfigError {
