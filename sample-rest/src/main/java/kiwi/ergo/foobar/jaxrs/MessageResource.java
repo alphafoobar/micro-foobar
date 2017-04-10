@@ -29,7 +29,7 @@ public class MessageResource {
      */
     @GET
     public Welcome whatever(@Nullable @QueryParam(value = "name") String name) {
-        logger.info("incoming request name=\"{}\"", name);
+        logger.info("> incoming request name=\"{}\"", name);
         String newName = name == null ? "duke" : name;
         return new Welcome(String.format("hey, brother: %s!", newName), newName);
     }

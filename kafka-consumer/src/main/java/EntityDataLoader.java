@@ -1,5 +1,4 @@
 import java.util.Properties;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.KeyValue;
@@ -28,12 +27,12 @@ public class EntityDataLoader {
         streamsConfiguration
             .put(StreamsConfig.VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass().getName());
 
-// Set up serializers and deserializers, which we will use for overriding the default Serdes
-// specified above.
+        // Set up serializers and deserializers, which we will use for overriding the default Serdes
+        // specified above.
         textLinesKStream = builder.stream(Serdes.ByteArray(), Serdes.String(), TOPIC_NAME);
         streams = new KafkaStreams(builder, streamsConfiguration);
 
-// Add shutdown hook to respond to SIGTERM and gracefully close Kafka Streams
+        // Add shutdown hook to respond to SIGTERM and gracefully close Kafka Streams
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
 
@@ -41,13 +40,14 @@ public class EntityDataLoader {
         // Logs each message and tries to JSON parse it
         textLinesKStream
             // Make sure entity exists
-            .filter((key, value) -> JSONExtractor.returnJSONValue(value, "entity") != null)
+            .filter((key, value) -> JsonExtractor.returnJsonValue(value, "entity") != null)
             // translate to new key value pairs
-            .map((key, value) -> new KeyValue<>(JSONExtractor.returnJSONValue(value, "entity"), value))
+            .map((key, value) -> new KeyValue<>(JsonExtractor.returnJsonValue(value, "entity"),
+                value))
             .foreach((key, value) -> {
-            System.out.print(key + ":" + value);
-            System.out.println(JSONExtractor.returnJSONValue(value, "entity"));
-        });
+                System.out.print(key + ":" + value);
+                System.out.println(JsonExtractor.returnJsonValue(value, "entity"));
+            });
         // send to another topic
         textLinesKStream.to("another-topic");
 
