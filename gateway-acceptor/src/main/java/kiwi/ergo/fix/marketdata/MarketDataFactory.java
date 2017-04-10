@@ -21,8 +21,8 @@ public class MarketDataFactory {
     private static BigDecimal getDefaultPrice(SessionSettings settings)
         throws ConfigError, FieldConvertError {
 
-        BigDecimal defaultMarketPrice = settings.isSetting(DEFAULT_MARKET_PRICE_KEY) ?
-            new BigDecimal(settings.getString(DEFAULT_MARKET_PRICE_KEY)) : BigDecimal.ZERO;
+        BigDecimal defaultMarketPrice = settings.isSetting(DEFAULT_MARKET_PRICE_KEY)
+            ? new BigDecimal(settings.getString(DEFAULT_MARKET_PRICE_KEY)) : BigDecimal.ZERO;
 
         log.info(DEFAULT_MARKET_PRICE_KEY + " initialised to " + defaultMarketPrice);
         return defaultMarketPrice;

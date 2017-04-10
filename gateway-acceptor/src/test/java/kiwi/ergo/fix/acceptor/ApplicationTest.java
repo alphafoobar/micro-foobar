@@ -38,7 +38,7 @@ import quickfix.fix44.ExecutionReport;
 import quickfix.fix44.NewOrderSingle;
 import quickfix.fix44.QuoteRequest;
 
-public class ApplicationTest extends SettingsTest {
+public class ApplicationTest extends AbstractSettingsTest {
 
     private static final SessionSettings settings = getSettings("/config/quickfixj/executor.cfg");
     private static final Application application = createApplication(settings, fixSession);

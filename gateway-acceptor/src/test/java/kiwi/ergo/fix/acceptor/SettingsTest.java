@@ -1,38 +1,39 @@
 package kiwi.ergo.fix.acceptor;
 
 import java.io.IOException;
-import kiwi.ergo.fix.marketdata.MarketDataFactory;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.mockito.Mockito;
 import quickfix.ConfigError;
+import quickfix.DefaultMessageFactory;
+import quickfix.DefaultSessionFactory;
 import quickfix.FieldConvertError;
-import quickfix.SessionID;
+import quickfix.LogFactory;
+import quickfix.NoopStoreFactory;
+import quickfix.ScreenLogFactory;
 import quickfix.SessionSettings;
+import quickfix.SocketAcceptor;
 
-public abstract class SettingsTest {
+public class SettingsTest extends AbstractSettingsTest {
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    private static final SessionSettings settings = getSettings("/config/quickfixj/test.cfg");
+    private static final Application application = createApplication(settings, fixSession);
 
-    protected static final FixSession fixSession = Mockito.spy(new FixSession());
-    protected static final SessionID SESSION_ID = new SessionID("FIX.4.4", "EXEC", "BANZAI");
+    @BeforeClass
+    public static void initializeApplicationSession()
+        throws ConfigError, FieldConvertError, IOException {
+        LogFactory logFactory = new ScreenLogFactory(true, true, true);
+        DefaultSessionFactory sessionFactory = Mockito.spy(
+            new DefaultSessionFactory(application, new NoopStoreFactory(), logFactory,
+                new DefaultMessageFactory()));
 
-    static SessionSettings getSettings(String configPath) {
-        try {
-            return Executor.getSessionSettings(configPath);
-        } catch (ConfigError | IOException e) {
-            throw new RuntimeException(e);
-        }
+        SocketAcceptor acceptor = new SocketAcceptor(sessionFactory, settings);
+        acceptor.start();
     }
 
-    static Application createApplication(SessionSettings settings, FixSession fixSession) {
-        try {
-            return Mockito.spy(Application.createApplication(settings, fixSession,
-                MarketDataFactory.createMarketDataProvider(settings)));
-        } catch (FieldConvertError | ConfigError e) {
-            throw new RuntimeException(e);
-        }
+    @Test
+    public void onCreate() {
+        application.onCreate(SESSION_ID);
     }
 
 }
