@@ -1,5 +1,6 @@
 package kiwi.ergo.foobar.api;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -13,6 +14,7 @@ public class Welcome {
     private String name;
     private ZonedDateTime dateTime;
 
+    @SuppressWarnings("unused") // JAXB requires empty public default constructor
     public Welcome() {}
 
     /**
@@ -24,7 +26,7 @@ public class Welcome {
     public Welcome(String greeting, String name) {
         this.greeting = greeting;
         this.name = name;
-        this.dateTime = ZonedDateTime.now();
+        this.dateTime = ZonedDateTime.now(ZoneOffset.UTC);
     }
 
     public String getGreeting() {
